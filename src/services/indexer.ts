@@ -24,6 +24,7 @@ import { logger } from '../utils/logger';
 import { recordIndexerEvent, IndexerEventOutcome } from '../middleware/metrics';
 import { tierForApprovedMilestones } from './tierPromotion';
 import { CONTRACT_EVENT_TYPES } from '../types';
+import { enqueueSavedSearchEvaluation, SAVED_SEARCH_TRIGGER_EVENTS } from './savedSearchAlerts';
 import {
   normalizeAndSortEvents,
   groupCoTransactionEvents,
@@ -662,6 +663,12 @@ export async function indexEvents(): Promise<void> {
           }
           webhookEvents.push({ type, payload, txHash: event.txHash, ledger: event.ledger });
         }
+
+        // Saved-search alerts (#1509): only reached for newly inserted events,
+        // so re-processing a ledger does not queue the player again.
+        if (SAVED_SEARCH_TRIGGER_EVENTS.has(type) && payload.player_id) {
+          enqueueSavedSearchEvaluation(String(payload.player_id));
+        }
       },
       span,
       { 'stellar.ledger': event.ledger, 'scoutoff.event_type': type },
@@ -878,6 +885,10 @@ export async function replayUnprocessedEvent(
       await updatePlayerProgress(playerId, tierForApprovedMilestones(approvedMilestoneCount));
       getCache().invalidatePlayerCache(playerId);
     }
+  }
+
+  if (insertResult.changes > 0 && SAVED_SEARCH_TRIGGER_EVENTS.has(type) && payload.player_id) {
+    enqueueSavedSearchEvaluation(String(payload.player_id));
   }
 
   // Only clear the unprocessed row once the event has been applied.

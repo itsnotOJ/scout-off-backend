@@ -224,6 +224,15 @@ query parameters**. The rules (from `isEventRelevantToWallet` in
 | `fees_withdrawn`       | `payload.recipient` or `payload.wallet` matches (admin)                               |
 | `player_deactivated`   | `payload.player_id`, `payload.wallet`, or `payload.scout_wallet` matches              |
 | `player_reactivated`   | `payload.player_id` or `payload.wallet` matches                                       |
+| `saved_search.match`   | `payload.scout` matches (the scout who owns the saved search, #1509)                  |
+
+`saved_search.match` is not a contract event. It is emitted by the saved-search
+alert worker (`src/services/savedSearchAlerts.ts`) when a player newly matches
+one of the scout's saved searches, while the `saved_search_alerts_enabled` flag is
+on. Its payload is the same as the `saved_search.match` webhook (see
+[webhooks.md](webhooks.md#saved_searchmatch)): `scout`, `player_id`, `search_ids`,
+`position`, `region`, `tier`, `timestamp`. Subscribe with
+`?eventType=saved_search.match`.
 
 In practice most clients only need `milestone_approved`, `scout_subscribed`, and
 `contact_unlocked`, but all event types are handled so the stream is

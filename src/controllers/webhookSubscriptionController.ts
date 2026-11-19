@@ -30,7 +30,7 @@ import { WebhookSubscriptionLimitError } from '../utils/scoutResourceLimits';
 
 // ─── Known event types ────────────────────────────────────────────────────────
 
-export const KNOWN_EVENT_TYPES: readonly ContractEventType[] = [
+export const KNOWN_EVENT_TYPES: readonly (ContractEventType | 'saved_search.match')[] = [
   'player_registered',
   'milestone_submitted',
   'milestone_approved',
@@ -40,6 +40,7 @@ export const KNOWN_EVENT_TYPES: readonly ContractEventType[] = [
   'trial_offer_accepted',
   'trial_offer_rejected',
   'fees_withdrawn',
+  'saved_search.match',
 ] as const;
 
 // ─── Validation schemas ───────────────────────────────────────────────────────

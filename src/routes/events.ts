@@ -4,6 +4,7 @@ import {
   broadcaster,
   SseSubscriber,
   SseFilterCriteria,
+  NotificationEventType,
   BroadcastEvent,
 } from '../services/eventBroadcaster';
 import { ContractEventType } from '../types';
@@ -122,7 +123,9 @@ function rejectAtConnectionLimit(wallet: string, res: Response): boolean {
 
 // ─── Valid event type set (for query param validation) ────────────────────────
 
-const VALID_EVENT_TYPES = new Set<ContractEventType>([
+type SseEventType = ContractEventType | NotificationEventType;
+
+const VALID_EVENT_TYPES = new Set<SseEventType>([
   'player_registered',
   'milestone_submitted',
   'milestone_approved',
@@ -130,6 +133,7 @@ const VALID_EVENT_TYPES = new Set<ContractEventType>([
   'contact_unlocked',
   'trial_offer_logged',
   'fees_withdrawn',
+  'saved_search.match',
 ]);
 
 /**
@@ -141,17 +145,17 @@ const VALID_EVENT_TYPES = new Set<ContractEventType>([
  * error listing the valid types when any value is unknown.
  */
 function parseEventTypes(raw: string | undefined):
-  | { ok: true; types: Set<ContractEventType> }
+  | { ok: true; types: Set<SseEventType> }
   | { ok: false; invalid: string[] } {
-  const types = new Set<ContractEventType>();
+  const types = new Set<SseEventType>();
   if (raw === undefined) return { ok: true, types };
 
   const invalid: string[] = [];
   for (const part of raw.split(',')) {
     const value = part.trim();
     if (value === '') continue;
-    if (VALID_EVENT_TYPES.has(value as ContractEventType)) {
-      types.add(value as ContractEventType);
+    if (VALID_EVENT_TYPES.has(value as SseEventType)) {
+      types.add(value as SseEventType);
     } else if (!invalid.includes(value)) {
       invalid.push(value);
     }

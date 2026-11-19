@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import crypto from 'crypto';
-import { listWebhookSubscriptions, insertWebhookDeadLetter, insertWebhookDelivery, WebhookSubscription } from '../db';
+import { listWebhookSubscriptions, getWebhookSubscriptionsByScout, insertWebhookDeadLetter, insertWebhookDelivery, WebhookSubscription } from '../db';
 import { logger } from '../utils/logger';
 import { recordWebhookDelivery, incrementWebhookDeadLettersTotal, incrementWebhookCircuitOpenTotal } from '../middleware/metrics';
 import { context, propagation, trace, SpanStatusCode } from '@opentelemetry/api';
@@ -287,6 +287,32 @@ export async function dispatchEventWebhook(eventType: string, payload: unknown):
       deliverToSubscription(subscription, eventType, body, deliveryId)
     )
   );
+}
+
+/**
+ * Dispatch an event only to one scout's webhook subscriptions, honouring each
+ * subscription's `event_types` filter (null = all types). Used for per-scout
+ * notifications such as `saved_search.match` (#1509). Never rejects on a
+ * delivery failure (same dead-letter behaviour as dispatchEventWebhook).
+ * Returns the number of subscriptions the event was delivered to.
+ */
+export async function dispatchScoutWebhook(scoutWallet: string, eventType: string, payload: unknown): Promise<number> {
+  const subscriptions = getWebhookSubscriptionsByScout(scoutWallet).filter((s) => {
+    if (isSuspended(s)) return false;
+    if (!s.event_types) return true;
+    try {
+      return (JSON.parse(s.event_types) as string[]).includes(eventType);
+    } catch {
+      return false;
+    }
+  });
+  if (subscriptions.length === 0) return 0;
+
+  const deliveryId = generateDeliveryId();
+  const correlationId = getCorrelationId();
+  const body = { deliveryId, eventType, payload, ...(correlationId ? { correlationId } : {}) };
+  await Promise.all(subscriptions.map((s) => deliverToSubscription(s, eventType, body, deliveryId)));
+  return subscriptions.length;
 }
 
 /**

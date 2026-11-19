@@ -300,6 +300,45 @@ Fires when an admin withdraws accumulated platform fees from the contract.
 }
 ```
 
+### `saved_search.match`
+
+Fires when a player newly matches one of the scout's saved searches (#1509),
+after the indexer applies `player_registered`, `milestone_approved` (tier
+promotion) or `profile_updated`. Unlike the other events it is **delivered only
+to the owning scout's subscriptions** (`dispatchScoutWebhook()`), and only to
+subscriptions whose `eventTypes` include `saved_search.match`, or that have no
+`eventTypes` filter. It is signed like every other webhook.
+
+A scout is alerted once per player. If the player stops matching all of the
+scout's searches and later matches again, the scout is alerted again. Gated by
+the `saved_search_alerts_enabled` feature flag.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `scout` | string | Scout wallet that owns the matching saved search(es) |
+| `player_id` | string | Matching player |
+| `search_ids` | number[] | Ids of the scout's saved searches the player matches |
+| `position` | string | Player position |
+| `region` | string | Player region |
+| `tier` | number | Player progress level (0–3) |
+| `timestamp` | string | ISO-8601 time the match was detected |
+
+```json
+{
+  "deliveryId": "6f708192-5555-4e66-b071-9d0e1f2a3b4c",
+  "eventType": "saved_search.match",
+  "payload": {
+    "scout": "GSCOUT...",
+    "player_id": "clx8k2...",
+    "search_ids": [12],
+    "position": "midfielder",
+    "region": "EU",
+    "tier": 2,
+    "timestamp": "2026-11-19T21:00:00.000Z"
+  }
+}
+```
+
 > **Note:** `player_registered`, `milestone_submitted`, and `milestone_approved`
 > are the event types currently wired to outbound HTTP webhook dispatch
 > (`dispatchEventWebhook()`); `scout_subscribed`, `contact_unlocked`,

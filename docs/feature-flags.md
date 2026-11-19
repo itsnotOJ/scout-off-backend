@@ -14,7 +14,7 @@ through the admin API.
 | ---- | ----- | ------- | ------------------ |
 | `saved_searches` | Scout saved-search endpoints: `GET/POST /api/scouts/:wallet/saved-searches`, `PUT/DELETE /api/scouts/:wallet/saved-searches/:id`, `GET /api/scouts/:wallet/saved-searches/:id/run` | **on** (seeded `1` by `db/010_feature_flags.sql`) | `requireFeatureFlag(FeatureFlags.SAVED_SEARCHES)` in `src/routes/scout.ts` |
 | `player_tokens_enabled` | Player token endpoints: `GET /api/players/:playerId/tokens`, `POST /api/players/:playerId/tokens/buy` | off (seeded `0` by `db/020_feature_flags_seed.sql`; legacy `player_tokens` rows are migrated by `db/037_player_tokens_flag_rename.sql`) | `featureFlagGuard()` in `src/controllers/playerTokenController.ts` (awaited `isFeatureEnabled`) |
-| `saved_search_alerts_enabled` | Nothing yet. Reserved for saved-search alerts. | off (seeded `0` by `db/020_feature_flags_seed.sql`) | Not checked anywhere (tracked separately). |
+| `saved_search_alerts_enabled` | Saved-search alerts: matching indexed players against saved searches and delivering `saved_search.match` webhooks + SSE events (#1509) | off (seeded `0` by `db/020_feature_flags_seed.sql`) | `isFeatureEnabled(FeatureFlags.SAVED_SEARCH_ALERTS_ENABLED)` in `src/services/savedSearchAlerts.ts` — when off, nothing is evaluated or delivered |
 | `graphql_enabled` | The `/graphql` endpoint. Requests 404 while it is off (#1126). | off (seeded `0`; also `false` in `FLAG_DEFAULTS`) | Cached async `isFeatureEnabled(GRAPHQL_ENABLED)` in the mount guard in `src/graphql/index.ts` |
 
 A disabled flag checked by `requireFeatureFlag` returns:
@@ -24,11 +24,6 @@ A disabled flag checked by `requireFeatureFlag` returns:
 ```
 
 with status `404`, so a disabled feature looks the same as a missing route.
-
-### Known caveats
-
-- **`saved_search_alerts_enabled` gates nothing.** No code reads it yet, so
-  toggling it changes nothing.
 
 ## Toggling flags (admin API)
 

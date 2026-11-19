@@ -706,6 +706,20 @@ export function getFeeWithdrawalDbWriteFailuresTotal(): number {
   return feeWithdrawalDbWriteFailuresStore.total;
 }
 
+// ─── Saved-search alert counter (#1509) ───────────────────────────────────────
+
+const savedSearchMatchesStore = { total: 0 };
+
+/** Increment scout_off_saved_search_matches_total (one per new scout/player alert). */
+export function incrementSavedSearchMatchesTotal(): void {
+  savedSearchMatchesStore.total += 1;
+}
+
+/** Returns the current saved-search match counter. */
+export function getSavedSearchMatchesTotal(): number {
+  return savedSearchMatchesStore.total;
+}
+
 // ─── Runtime metrics (process CPU, RSS, heap, event-loop lag, GC, handles) ────
 
 /**
@@ -1006,6 +1020,9 @@ export function serializeMetrics(extras: SerializeMetricsExtras = {}): string {
   lines.push('# HELP scout_off_webhook_dead_letters_inserted_total Lifetime webhook dead-letter inserts');
   lines.push('# TYPE scout_off_webhook_dead_letters_inserted_total counter');
   lines.push(`scout_off_webhook_dead_letters_inserted_total ${webhook.deadLettersTotal}`);
+  lines.push('# HELP scout_off_saved_search_matches_total New saved-search matches alerted to scouts');
+  lines.push('# TYPE scout_off_saved_search_matches_total counter');
+  lines.push(`scout_off_saved_search_matches_total ${savedSearchMatchesStore.total}`);
   lines.push('# HELP scout_off_webhook_subscriptions Webhook subscriptions by health status');
   lines.push('# TYPE scout_off_webhook_subscriptions gauge');
   for (const [status, count] of Object.entries(getWebhookSubscriptionStatusCounts())) {

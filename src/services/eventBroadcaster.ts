@@ -7,8 +7,11 @@ import config from '../config';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** A single broadcast-ready event payload sent over SSE. */
+/** Non-contract notification events delivered over SSE (#1509). */
+export type NotificationEventType = 'saved_search.match';
+
 export interface BroadcastEvent {
-  type: ContractEventType;
+  type: ContractEventType | NotificationEventType;
   payload: Record<string, unknown>;
 }
 
@@ -22,7 +25,7 @@ export interface BroadcastEvent {
  */
 export interface SseFilterCriteria {
   /** Set of event types to receive. Empty set = no type filter (receive all types). */
-  eventTypes: ReadonlySet<ContractEventType>;
+  eventTypes: ReadonlySet<ContractEventType | NotificationEventType>;
   /** If set, only events whose payload contains this player ID are delivered. */
   playerId?: string;
 }
@@ -111,6 +114,10 @@ export function isEventRelevantToWallet(
 
     case 'player_reactivated':
       return (playerId !== undefined && p.player_id === playerId) || p.wallet === wallet;
+
+    case 'saved_search.match':
+      // Private to the scout who owns the saved search.
+      return p.scout === wallet;
 
     default:
       return false;

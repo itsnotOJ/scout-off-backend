@@ -40,6 +40,23 @@ export async function recordSavedSearchNotification(scoutWallet: string, playerI
 }
 
 /**
+ * Atomically claim the (scout, player) alert slot. Returns true only for the
+ * first caller, so concurrent or replayed evaluations notify at most once (#1509).
+ */
+export async function claimSavedSearchNotification(scoutWallet: string, playerId: string, notifiedAt: number): Promise<boolean> {
+  const sql = 'INSERT INTO saved_search_notifications (scout_wallet, player_id, notified_at) ' +
+              'VALUES (?, ?, ?) ON CONFLICT(scout_wallet, player_id) DO NOTHING';
+  const info = await timedQueryAsync(sql, () => getDriver().run(sql, [scoutWallet, playerId, notifiedAt]));
+  return info.changes > 0;
+}
+
+/** Clear the alert slot once a player no longer matches any of the scout's searches. */
+export async function deleteSavedSearchNotification(scoutWallet: string, playerId: string): Promise<void> {
+  const sql = 'DELETE FROM saved_search_notifications WHERE scout_wallet = ? AND player_id = ?';
+  await timedQueryAsync(sql, () => getDriver().run(sql, [scoutWallet, playerId]));
+}
+
+/**
  * Insert a new saved search for a scout.
  * Returns the new row id.
  */
