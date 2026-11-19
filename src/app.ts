@@ -263,9 +263,11 @@ app.use(apiVersion);
 // Upload endpoints (player registration, milestone evidence) accept larger payloads.
 // Auth endpoints are restricted to prevent DoS via large JWT bodies.
 // All other routes use the global JSON_PAYLOAD_LIMIT (default 1 MB).
+// Keep the raw bytes so signed admin requests (#1511) can hash exactly what the client sent.
+const keepRawBody = (req: express.Request, _res: unknown, buf: Buffer): void => { req.rawBody = buf; };
 const uploadJsonParser = express.json({ limit: config.bodyLimit.upload });
 const authJsonParser = express.json({ limit: config.bodyLimit.auth });
-const defaultJsonParser = express.json({ limit: config.bodyLimit.json });
+const defaultJsonParser = express.json({ limit: config.bodyLimit.json, verify: keepRawBody });
 
 const UPLOAD_PATHS = new Set([
   '/api/players/register', '/api/v1/players/register',

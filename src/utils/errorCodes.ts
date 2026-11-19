@@ -87,6 +87,30 @@ export const ErrorCode = {
   UNAUTHORIZED: 'UNAUTHORIZED',
 
   /**
+   * HTTP 401 — This admin route requires X-Admin-Signature, X-Admin-Timestamp and X-Admin-Nonce (#1511).
+   * Client should: Sign the canonical request with the admin wallet (see docs/auth.md).
+   */
+  ADMIN_SIGNATURE_REQUIRED: 'ADMIN_SIGNATURE_REQUIRED',
+
+  /**
+   * HTTP 401 — The admin request signature does not match the JWT account or the request (#1511).
+   * Client should: Re-sign the exact method, path, body, timestamp and nonce being sent.
+   */
+  ADMIN_SIGNATURE_INVALID: 'ADMIN_SIGNATURE_INVALID',
+
+  /**
+   * HTTP 401 — X-Admin-Timestamp is more than 60 seconds from server time (#1511).
+   * Client should: Check the clock and sign a fresh request.
+   */
+  ADMIN_SIGNATURE_STALE: 'ADMIN_SIGNATURE_STALE',
+
+  /**
+   * HTTP 401 — X-Admin-Nonce has already been used (#1511).
+   * Client should: Generate a new random nonce for every request.
+   */
+  ADMIN_SIGNATURE_REPLAYED: 'ADMIN_SIGNATURE_REPLAYED',
+
+  /**
    * HTTP 403 — Request is authenticated but lacks permission for this resource/action.
    * Client should: Verify your account role/scope; contact support to request access.
    */

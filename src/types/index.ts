@@ -182,6 +182,10 @@ declare global {
       apiKeyScopes?: string[] | null;
       /** Database id of the API key used for this request, when authenticated via X-API-Key. */
       apiKeyId?: number;
+      /** Raw JSON request body bytes, captured by the body parser (used for request signing, #1511). */
+      rawBody?: Buffer;
+      /** Verified signed-admin-request metadata, set by requireSignedAdminRequest (#1511). */
+      adminSignature?: { signature: string; canonicalHash: string; timestamp: number; nonce: string };
       /** Expiry timestamp (Unix seconds) of the API key used for this request, if any. */
       apiKeyExpiresAt?: number;
     }

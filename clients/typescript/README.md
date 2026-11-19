@@ -33,6 +33,37 @@ Set `baseUrl` to the API origin plus a supported mount (`/api`, `/api/v1`, or
 authentication. Standard `openapi-fetch` options, including custom headers and
 a custom `fetch` implementation, are also supported.
 
+## Signed admin requests
+
+High-risk admin routes (fee withdrawal, fee config, contract pause/unpause,
+multisig approvals) need a wallet signature on top of the admin bearer token.
+`createAdminSignatureHeaders` builds the headers from any signer callback,
+for example Freighter's `signMessage` (SEP-53):
+
+```ts
+import { createScoutOffClient, createAdminSignatureHeaders } from '@scoutoff/api-client';
+import { signMessage } from '@stellar/freighter-api';
+
+const client = createScoutOffClient({ baseUrl: 'https://api.scoutoff.io/api', accessToken });
+
+const body = { recipient: 'G...', amount: '100' };
+const headers = await createAdminSignatureHeaders({
+  method: 'POST',
+  path: '/api/admin/fees/withdraw',      // exact path, no query string
+  body: JSON.stringify(body),            // exact bytes that will be sent
+  signer: async (message) => (await signMessage(message)).signedMessage as string,
+});
+
+await client.POST('/admin/fees/withdraw', {
+  body,
+  headers,
+  bodySerializer: () => JSON.stringify(body), // keep the signed bytes identical
+});
+```
+
+Each call needs a fresh signature: the nonce is single-use and the timestamp
+must be within 60 seconds of server time. See `docs/auth.md` in the backend.
+
 ## Regenerate and version
 
 From the repository root:

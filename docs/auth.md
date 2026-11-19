@@ -304,6 +304,56 @@ curl "http://localhost:3000/api/admin/events" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
+## Signed admin requests (#1511)
+
+A bearer JWT with `role=admin` is not enough on its own for high-risk admin
+mutations. A stolen access token (or a 7-day refresh token) must not be able to
+move funds or pause contracts, so these routes also require a signature from the
+admin's Stellar key — the same account as the JWT's `sub`.
+
+**Canonical string** (newline-separated, no trailing newline):
+
+```
+METHOD
+PATH            # e.g. /api/admin/fees/withdraw — as sent, without the query string
+SHA256_HEX(raw request body)   # hash of the empty string when there is no body
+TIMESTAMP       # unix seconds, must be within ±60s of server time
+NONCE           # 16–128 chars of [A-Za-z0-9_-], never reused
+```
+
+**Headers:**
+
+| Header | Value |
+|---|---|
+| `X-Admin-Signature` | base64 ed25519 signature over the canonical string, or over its SEP-53 form `sha256("Stellar Signed Message:\n" + canonical)` as produced by wallet `signMessage` APIs |
+| `X-Admin-Timestamp` | the `TIMESTAMP` that was signed |
+| `X-Admin-Nonce` | the `NONCE` that was signed |
+
+The `requireSignedAdminRequest` middleware runs after `requireRole('admin')`. It
+verifies the signature against the JWT's account, enforces the 60-second window,
+and consumes the nonce. Nonces are single-use across all instances: Redis
+`SET NX EX` is the primary store, with the `admin_request_nonces` table as the
+fallback. The nonce is only consumed after the signature checks out.
+
+Every accepted signed request writes an `admin_signed_request` audit-log entry with
+`method`, `path`, `signature`, `canonicalHash` (SHA-256 of the canonical string),
+`timestamp` and `nonce`.
+
+**Configuration:**
+
+| Variable | Default | Effect |
+|---|---|---|
+| `ADMIN_SIGNED_REQUESTS_ENABLED` | `true` | Set to `false` only temporarily, while migrating existing automation. |
+| `ADMIN_SIGNED_ROUTES` | `POST /fees,POST /fees/withdraw,POST /fees/config,POST /contract/pause,POST /contract/unpause,POST /actions/:id/approve` | `METHOD /path` entries relative to the admin router. `POST /validators/revoke`, `POST /tokens/revoke` and `POST /indexer/reindex` are wired up too and can be added here. |
+
+**Errors** (all `401`): `ADMIN_SIGNATURE_REQUIRED` (headers missing),
+`ADMIN_SIGNATURE_INVALID` (wrong key, or tampered method, path or body, or a bad nonce format),
+`ADMIN_SIGNATURE_STALE` (timestamp outside ±60s), `ADMIN_SIGNATURE_REPLAYED`
+(nonce already used).
+
+The TypeScript client exposes `createAdminSignatureHeaders()` to build these
+headers from any signer callback. See `clients/typescript/README.md`.
+
 ## API-key scopes (#1019)
 
 Long-lived API keys (issued via `POST /api/scouts/:wallet/api-keys`) can be

@@ -181,6 +181,18 @@ Fields:
 - `409`: Action already executed
 - `410`: Action has expired
 
+### Signed approvals (#1511)
+
+`POST /api/admin/actions/{actionId}/approve`, like the propose routes for fee
+withdrawal, fee config and contract pause/unpause, requires a **signed request**
+(`X-Admin-Signature`, `X-Admin-Timestamp`, `X-Admin-Nonce`) on top of the
+admin JWT. The signature must come from the approving admin's own wallet, so an
+approval cannot be forged with a stolen bearer token and is non-repudiable.
+Each accepted approval writes an `admin_signed_request` audit entry holding the
+signature and the canonical-string hash, next to the existing
+`<action>_approved` entry. See [auth.md — Signed admin requests](auth.md#signed-admin-requests-1511)
+for the canonical string and configuration.
+
 ### GET /api/admin/actions/pending
 
 Lists all pending (not yet expired or executed) admin actions.

@@ -45,6 +45,7 @@ import { setIpReputationController, getIpReputationController, setIpReputationSc
 import { triggerReindex, reindexStatusHandler, reindexBodyShapeSchema, cancelReindexHandler } from '../controllers/reindexController';
 import { triggerReplay, replayStatusHandler, replayBodyShapeSchema } from '../controllers/replayController';
 import { requireRole } from '../middleware/auth';
+import { requireSignedAdminRequest } from '../middleware/requireSignedAdminRequest';
 import { auditRead } from '../middleware/auditRead';
 import { idempotency } from '../middleware/idempotency';
 import { ipAllowlistMiddleware } from '../middleware/ipAllowlist';
@@ -147,7 +148,7 @@ router.route('/events/export')
  */
 router.route('/fees')
   .get(requireRole('admin'), getFeeSummary)
-  .post(requireRole('admin'), validateBody(withdrawFeesSchema), withdrawFeesController)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(withdrawFeesSchema), withdrawFeesController)
   .all(methodNotAllowed(['GET', 'POST', 'HEAD']));
 
 /**
@@ -174,7 +175,7 @@ router.route('/fees')
  * @auth Bearer (admin role required)
  */
 router.route('/fees/withdraw')
-  .post(requireRole('admin'), idempotency, validateBody(withdrawFeesV2Schema), withdrawFeesV2Controller)
+  .post(requireRole('admin'), requireSignedAdminRequest, idempotency, validateBody(withdrawFeesV2Schema), withdrawFeesV2Controller)
   .all(methodNotAllowed(['POST']));
 
 /**
@@ -281,7 +282,7 @@ router.route('/validators/bulk-import')
  * @auth Bearer (admin role required)
  */
 router.route('/validators/revoke')
-  .post(requireRole('admin'), validateBody(validatorWalletSchema), revokeValidator)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(validatorWalletSchema), revokeValidator)
   .all(methodNotAllowed(['POST']));
 
 /**
@@ -392,7 +393,7 @@ router.route('/players/:playerId/reactivate')
  * @auth Bearer (admin role required)
  */
 router.route('/contract/pause')
-  .post(requireRole('admin'), validateBody(emptyBodySchema), pauseContract)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(emptyBodySchema), pauseContract)
   .all(methodNotAllowed(['POST']));
 
 /**
@@ -407,7 +408,7 @@ router.route('/contract/pause')
  * @auth Bearer (admin role required)
  */
 router.route('/contract/unpause')
-  .post(requireRole('admin'), validateBody(emptyBodySchema), unpauseContract)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(emptyBodySchema), unpauseContract)
   .all(methodNotAllowed(['POST']));
 
 /**
@@ -449,7 +450,7 @@ router.route('/introspect')
  * @auth Bearer (admin role required)
  */
 router.route('/tokens/revoke')
-  .post(requireRole('admin'), validateBody(revokeTokenSchema), revokeTokenController)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(revokeTokenSchema), revokeTokenController)
   .all(methodNotAllowed(['POST']));
 
 /**
@@ -465,7 +466,7 @@ router.route('/tokens/revoke')
  * @auth Bearer (admin role required)
  */
 router.route('/indexer/reindex')
-  .post(requireRole('admin'), validateBody(reindexSchema), reindex)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(reindexSchema), reindex)
   .all(methodNotAllowed(['POST']));
 
 /**
@@ -605,7 +606,7 @@ router.route('/actions/:id')
  * @auth Bearer (admin role required)
  */
 router.route('/actions/:id/approve')
-  .post(requireRole('admin'), validateBody(emptyBodySchema), approvePendingAction)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(emptyBodySchema), approvePendingAction)
   .all(methodNotAllowed(['POST']));
 
 /**
@@ -893,7 +894,7 @@ router.route('/webhooks/:id/summary')
  * @auth Bearer (admin role required)
  */
 router.route('/fees/config')
-  .post(requireRole('admin'), validateBody(updatePlatformFeeSchema), updatePlatformFeeController)
+  .post(requireRole('admin'), requireSignedAdminRequest, validateBody(updatePlatformFeeSchema), updatePlatformFeeController)
   .all(methodNotAllowed(['POST']));
 
 /**

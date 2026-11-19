@@ -25,6 +25,10 @@ process.env.STELLAR_HEALTH_CHECK = "false";
 // files construct admin JWTs for this same wallet where needed. Must be set
 // here (before src/config is first imported transitively via src/db below)
 // since config.ts computes config.adminWallets once at module load time.
+// Signed admin requests (#1511) are on by default; existing admin route tests
+// authenticate with a JWT only. tests/middleware/requireSignedAdminRequest.test.ts
+// covers the signing layer with it enabled.
+process.env.ADMIN_SIGNED_REQUESTS_ENABLED = process.env.ADMIN_SIGNED_REQUESTS_ENABLED ?? "false";
 process.env.ADMIN_WALLET =
   process.env.ADMIN_WALLET ??
   "GADMINAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4";

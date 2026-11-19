@@ -571,6 +571,25 @@ const config = {
   stellarHealthCheckEnabled: process.env.STELLAR_HEALTH_CHECK !== 'false',
   adminWallet: process.env.ADMIN_WALLET ?? '',
   adminWallets: (process.env.ADMIN_WALLETS ?? process.env.ADMIN_WALLET ?? '').split(',').map(w => w.trim()).filter(w => w.length > 0),
+  /**
+   * Require a wallet signature (X-Admin-Signature/-Timestamp/-Nonce) on the
+   * admin routes in `adminSignedRoutes` (#1511). Set to false only while
+   * migrating existing automation. See docs/auth.md.
+   */
+  adminSignedRequestsEnabled: (() => {
+    const raw = process.env.ADMIN_SIGNED_REQUESTS_ENABLED ?? 'true';
+    if (!['true', 'false'].includes(raw)) throw new Error('ADMIN_SIGNED_REQUESTS_ENABLED must be true or false');
+    return raw === 'true';
+  })(),
+
+  /**
+   * Admin routes that require a signed request, as "METHOD /path" relative to
+   * the admin router. Defaults to the fund-moving, pausing and multisig
+   * approval routes.
+   */
+  adminSignedRoutes: (process.env.ADMIN_SIGNED_ROUTES ??
+    'POST /fees,POST /fees/withdraw,POST /fees/config,POST /contract/pause,POST /contract/unpause,POST /actions/:id/approve')
+    .split(',').map((r) => r.trim().replace(/\s+/g, ' ')).filter(Boolean),
   adminThreshold: parseNumericEnv('ADMIN_THRESHOLD', process.env.ADMIN_THRESHOLD, 1, { min: 1, integer: true }),
   securityHeaders: {
     hsts: process.env.SECURITY_HSTS ?? 'max-age=31536000; includeSubDomains',
